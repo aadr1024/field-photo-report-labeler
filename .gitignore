@@ -1,0 +1,16 @@
+.automation/
+.clipboard_server_boot.log
+.folder_memory.json
+.image_index.json
+.interaction_log.json
+.j260101-article-reports-annotations.json
+.j260101-article-reports-annotations.json.bak-*
+.j260101-article-reports-folder-state.json
+.last_hover.txt
+.streamlit-restart.log
+.ui_state.json
+__pycache__/
+*.pyc
+.DS_Store
+labeled-data-backups/
+photo-import-manifests/

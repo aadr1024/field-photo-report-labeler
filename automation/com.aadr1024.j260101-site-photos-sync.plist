@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.aadr1024.j260101-site-photos-sync</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>__APP_DIR__/automation/sync_j260101_site_photos_when_plugged_in.sh</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>__APP_DIR__</string>
+
+  <key>RunAtLoad</key>
+  <true/>
+
+  <key>StartInterval</key>
+  <integer>3600</integer>
+
+  <key>StandardOutPath</key>
+  <string>__APP_DIR__/.automation/logs/photo-sync.launchd.out.log</string>
+
+  <key>StandardErrorPath</key>
+  <string>__APP_DIR__/.automation/logs/photo-sync.launchd.err.log</string>
+</dict>
+</plist>
