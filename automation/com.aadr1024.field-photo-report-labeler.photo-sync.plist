@@ -4,11 +4,11 @@
 <plist version="1.0">
 <dict>
   <key>Label</key>
-  <string>com.aadr1024.j260101-site-photos-sync</string>
+  <string>com.aadr1024.field-photo-report-labeler.photo-sync</string>
 
   <key>ProgramArguments</key>
   <array>
-    <string>__APP_DIR__/automation/sync_j260101_site_photos_when_plugged_in.sh</string>
+    <string>__APP_DIR__/automation/sync_site_photos_when_plugged_in.sh</string>
   </array>
 
   <key>WorkingDirectory</key>

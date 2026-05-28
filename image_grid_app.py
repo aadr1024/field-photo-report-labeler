@@ -86,16 +86,16 @@ LAST_HOVER_FILE = Path(__file__).parent / ".last_hover.txt"
 IMAGE_INDEX_FILE = Path(__file__).parent / ".image_index.json"
 INTERACTION_LOG_FILE = Path(__file__).parent / ".interaction_log.json"
 UI_STATE_FILE = Path(__file__).parent / ".ui_state.json"
-ANNOTATION_METADATA_FILE = Path(__file__).parent / ".j260101-article-reports-annotations.json"
-FOLDER_STATE_FILE = Path(__file__).parent / ".j260101-article-reports-folder-state.json"
-J260101_TABLES = ("3", "4", "5", "6")
-J260101_TABLE_PRESET_ROWS = {
+ANNOTATION_METADATA_FILE = Path(__file__).parent / ".field-photo-report-labeler-annotations.json"
+FOLDER_STATE_FILE = Path(__file__).parent / ".field-photo-report-labeler-folder-state.json"
+REPORT_LABELER_TABLES = ("3", "4", "5", "6")
+REPORT_LABELER_TABLE_PRESET_ROWS = {
     "3": ("Row 1", "Row 2", "Row 3", "Row 4"),
     "4": ("Row 2 Column A", "Row 3 Column A", "Row 2 Column B", "Row 3 Column B"),
     "5": ("MG 1", "MG 2", "MG 3", "MG 4", "MG 5", "MG 6", "MG 7"),
     "6": ("MG 1", "MG 2", "MG 3", "MG 4", "MG 5", "MG 6", "MG 7"),
 }
-J260101_TABLE_STATION_ROW_PRESETS = {
+REPORT_LABELER_TABLE_STATION_ROW_PRESETS = {
     "4": (
         ("Test Station 1", "Row 2 Column A"),
         ("Test Station 1", "Row 3 Column A"),
@@ -103,29 +103,29 @@ J260101_TABLE_STATION_ROW_PRESETS = {
         ("Test Station 2", "Row 3 Column B"),
     ),
 }
-J260101_TABLE_STATION_SUFFIXES = {
+REPORT_LABELER_TABLE_STATION_SUFFIXES = {
     "4": ("Test Station 1", "Test Station 2"),
     "5": ("Test Station 1", "Test Station 2"),
     "6": ("Test Station 1", "Test Station 2"),
 }
-J260101_INSTANT_OFF_STATUS_LABELS = (
+REPORT_LABELER_INSTANT_OFF_STATUS_LABELS = (
     "Yes Video Exists",
     "No Video Exists",
 )
-J260101_VIDEO_EXTENSIONS = {".mp4", ".mov", ".avi", ".m4v", ".wmv", ".flv", ".mkv", ".webm", ".mpeg", ".mpg", ".m4v"}
+REPORT_LABELER_VIDEO_EXTENSIONS = {".mp4", ".mov", ".avi", ".m4v", ".wmv", ".flv", ".mkv", ".webm", ".mpeg", ".mpg", ".m4v"}
 ADJACENT_FOLDER_PRELOAD_RADIUS = 2
 ADJACENT_FOLDER_PRELOAD_IMAGE_LIMIT = 80
 
 
 def _build_table_label_variants(table: str) -> tuple[str, ...]:
-    station_rows = J260101_TABLE_STATION_ROW_PRESETS.get(table)
+    station_rows = REPORT_LABELER_TABLE_STATION_ROW_PRESETS.get(table)
     if station_rows:
         return tuple(
             f"Table {table} {row} {station}"
             for station, row in station_rows
         )
-    rows = J260101_TABLE_PRESET_ROWS.get(table, ())
-    stations = J260101_TABLE_STATION_SUFFIXES.get(table)
+    rows = REPORT_LABELER_TABLE_PRESET_ROWS.get(table, ())
+    stations = REPORT_LABELER_TABLE_STATION_SUFFIXES.get(table)
     if not stations:
         return tuple(f"Table {table} {row}" for row in rows)
     return tuple(
@@ -135,23 +135,23 @@ def _build_table_label_variants(table: str) -> tuple[str, ...]:
     )
 
 
-J260101_CUSTOM_LABEL_PRESETS: list[str] = []
-J260101_LABEL_PRESETS = [
+REPORT_LABELER_CUSTOM_LABEL_PRESETS: list[str] = []
+REPORT_LABELER_LABEL_PRESETS = [
     preset
-    for table in J260101_TABLES
+    for table in REPORT_LABELER_TABLES
     for preset in _build_table_label_variants(table)
-] + J260101_CUSTOM_LABEL_PRESETS
+] + REPORT_LABELER_CUSTOM_LABEL_PRESETS
 
 
 def _build_table_preset_group(table: str) -> tuple[str, ...]:
-    station_rows = J260101_TABLE_STATION_ROW_PRESETS.get(table)
+    station_rows = REPORT_LABELER_TABLE_STATION_ROW_PRESETS.get(table)
     if station_rows:
         return tuple(
             f"Table {table} {row} {station}"
             for station, row in station_rows
         )
-    rows = J260101_TABLE_PRESET_ROWS.get(table, ())
-    stations = J260101_TABLE_STATION_SUFFIXES.get(table, ())
+    rows = REPORT_LABELER_TABLE_PRESET_ROWS.get(table, ())
+    stations = REPORT_LABELER_TABLE_STATION_SUFFIXES.get(table, ())
     if stations:
         return tuple(
             f"Table {table} {row} {station}"
@@ -161,19 +161,19 @@ def _build_table_preset_group(table: str) -> tuple[str, ...]:
     return tuple(f"Table {table} {row}" for row in rows)
 
 
-J260101_LABEL_PRESET_GROUPS = {
+REPORT_LABELER_LABEL_PRESET_GROUPS = {
     f"Table {table}": list(_build_table_preset_group(table))
-    for table in J260101_TABLES
+    for table in REPORT_LABELER_TABLES
 }
-if J260101_CUSTOM_LABEL_PRESETS:
-    J260101_LABEL_PRESET_GROUPS["Other"] = J260101_CUSTOM_LABEL_PRESETS
-J260101_PRESET_LOOKUP = {label.lower(): label for label in J260101_LABEL_PRESETS}
+if REPORT_LABELER_CUSTOM_LABEL_PRESETS:
+    REPORT_LABELER_LABEL_PRESET_GROUPS["Other"] = REPORT_LABELER_CUSTOM_LABEL_PRESETS
+REPORT_LABELER_PRESET_LOOKUP = {label.lower(): label for label in REPORT_LABELER_LABEL_PRESETS}
 def _normalize_annotation_single(values):
     """Keep a single, deterministic label for one-to-one label mapping."""
     raw_values = values if isinstance(values, (list, tuple, set)) else [values]
     for raw_value in raw_values:
         raw_label = str(raw_value or "").strip()
-        canonical = J260101_PRESET_LOOKUP.get(raw_label.lower())
+        canonical = REPORT_LABELER_PRESET_LOOKUP.get(raw_label.lower())
         if canonical:
             return [canonical]
     normalized = _normalize_annotation_labels(values)
@@ -189,7 +189,7 @@ def _normalize_annotation_stored(values) -> list[str]:
         raw_label = str(raw_value or "").strip()
         if not raw_label:
             continue
-        normalized = J260101_PRESET_LOOKUP.get(raw_label.lower())
+        normalized = REPORT_LABELER_PRESET_LOOKUP.get(raw_label.lower())
         if not normalized:
             normalized = raw_label
         if normalized and normalized not in seen:
@@ -232,13 +232,13 @@ def _annotation_state_payload() -> dict:
     }
 
 
-J260101_LEGACY_PAIR_MAP = {
+REPORT_LABELER_LEGACY_PAIR_MAP = {
     "a": "1",
     "b": "2",
     "c": "3",
     "d": "4",
 }
-J260101_ROW_LABEL_COLOR_PALETTE = {
+REPORT_LABELER_ROW_LABEL_COLOR_PALETTE = {
     "1": "hsl(0, 0%, 12%)",    # black
     "2": "hsl(0, 84%, 56%)",   # red
     "3": "hsl(24, 94%, 53%)",  # orange
@@ -247,7 +247,7 @@ J260101_ROW_LABEL_COLOR_PALETTE = {
     "6": "hsl(30, 45%, 38%)",  # brown
     "7": "hsl(267, 84%, 51%)", # purple
 }
-J260101_TABLE_WORDS = {
+REPORT_LABELER_TABLE_WORDS = {
     "one": "3",
     "won": "3",
     "two": "4",
@@ -1104,7 +1104,7 @@ def load_folder_memory() -> dict:
 def get_default_parent() -> str:
     """Get the default parent directory from memory, env, or a safe local fallback."""
     memory = load_folder_memory()
-    fallback = str(Path(os.getenv("J260101_LOCAL_PHOTO_ROOT", "~/Pictures")).expanduser())
+    fallback = str(Path(os.getenv("REPORT_LABELER_LOCAL_PHOTO_ROOT", "~/Pictures")).expanduser())
     return memory.get("_default_parent", fallback)
 
 
@@ -1145,17 +1145,17 @@ def _normalize_annotation_labels(values) -> list[str]:
         target = re.sub(r"\s+", " ", raw_label.strip().lower())
         if not target:
             return None
-        if target in J260101_PRESET_LOOKUP:
-            return J260101_PRESET_LOOKUP[target]
+        if target in REPORT_LABELER_PRESET_LOOKUP:
+            return REPORT_LABELER_PRESET_LOOKUP[target]
 
         best_matches = difflib.get_close_matches(
             target,
-            [label.lower() for label in J260101_LABEL_PRESETS],
+            [label.lower() for label in REPORT_LABELER_LABEL_PRESETS],
             n=1,
             cutoff=0.78,
         )
         if best_matches:
-            canonical = J260101_PRESET_LOOKUP[best_matches[0]]
+            canonical = REPORT_LABELER_PRESET_LOOKUP[best_matches[0]]
             if canonical:
                 return canonical
         return None
@@ -1177,9 +1177,9 @@ def _normalize_annotation_labels(values) -> list[str]:
             token = (raw_token or "").strip().lower()
             if not token:
                 return None
-            if token.isdigit() and token in J260101_TABLES:
+            if token.isdigit() and token in REPORT_LABELER_TABLES:
                 return token
-            return J260101_TABLE_WORDS.get(token)
+            return REPORT_LABELER_TABLE_WORDS.get(token)
 
         def add_pair_from_digits(letter: str, digits: list[str]) -> None:
             if len(digits) < 2:
@@ -1188,9 +1188,9 @@ def _normalize_annotation_labels(values) -> list[str]:
             if len(sorted_digits) < 2:
                 return
             table_num = current_table or next_table_default
-            index = J260101_LEGACY_PAIR_MAP.get(letter.lower())
-            if index and table_num in J260101_TABLES:
-                table_rows = J260101_TABLE_PRESET_ROWS.get(table_num, ())
+            index = REPORT_LABELER_LEGACY_PAIR_MAP.get(letter.lower())
+            if index and table_num in REPORT_LABELER_TABLES:
+                table_rows = REPORT_LABELER_TABLE_PRESET_ROWS.get(table_num, ())
                 row_index = int(index) - 1
                 if 0 <= row_index < len(table_rows):
                     output.append(f"Table {table_num} {table_rows[row_index]}")
@@ -1221,9 +1221,9 @@ def _normalize_annotation_labels(values) -> list[str]:
 
         def emit_numbered_label(kind: str, raw_number: str, raw_station: str | None = None) -> None:
             table_num = current_table or next_table_default
-            if table_num not in J260101_TABLES:
+            if table_num not in REPORT_LABELER_TABLES:
                 return
-            table_rows = J260101_TABLE_PRESET_ROWS.get(table_num, ())
+            table_rows = REPORT_LABELER_TABLE_PRESET_ROWS.get(table_num, ())
             if not table_rows:
                 return
 
@@ -1253,7 +1253,7 @@ def _normalize_annotation_labels(values) -> list[str]:
                 # Keep MG token compatible; route MG1..MG7 to Table rows when table matches.
                 row_index = min(row_index, len(table_rows) - 1)
 
-            station_suffixes = J260101_TABLE_STATION_SUFFIXES.get(table_num)
+            station_suffixes = REPORT_LABELER_TABLE_STATION_SUFFIXES.get(table_num)
             if station_suffixes:
                 normalized_station = normalize_numeric_token(raw_station) if raw_station else None
                 if normalized_station and normalized_station.isdigit():
@@ -1268,7 +1268,7 @@ def _normalize_annotation_labels(values) -> list[str]:
 
             output.append(f"Table {table_num} {table_rows[row_index]}")
 
-        normalized_phrase = re.sub(r"\btable\s+(one|two|three|four|five|six|seven|eight)\b", lambda m: "table " + J260101_TABLE_WORDS.get(m.group(1), m.group(1)), normalized_phrase)
+        normalized_phrase = re.sub(r"\btable\s+(one|two|three|four|five|six|seven|eight)\b", lambda m: "table " + REPORT_LABELER_TABLE_WORDS.get(m.group(1), m.group(1)), normalized_phrase)
         normalized_phrase = normalized_phrase.replace("-", " ")
         normalized_phrase = re.sub(r"\btable(\d+)\b", r"table \1", normalized_phrase)
         normalized_phrase = re.sub(r"\s+", " ", normalized_phrase).strip()
@@ -1362,12 +1362,12 @@ def _normalize_annotation_labels(values) -> list[str]:
 
             if token in {"row", "mg", "md"} and i + 1 < len(tokens):
                 current = current_table or next_table_default
-                station_suffixes = J260101_TABLE_STATION_SUFFIXES.get(current)
+                station_suffixes = REPORT_LABELER_TABLE_STATION_SUFFIXES.get(current)
                 next_i = i + 2
                 row_number = tokens[i + 1]
                 station_number = None
 
-                if current in J260101_TABLES and station_suffixes:
+                if current in REPORT_LABELER_TABLES and station_suffixes:
                     # row 2 station 1
                     if (
                         i + 3 < len(tokens)
@@ -1393,7 +1393,7 @@ def _normalize_annotation_labels(values) -> list[str]:
 
             # Handle table tokens separated from table keyword, e.g. "... table 4 ..."
             token_table = normalize_table_token(token)
-            if token_table in J260101_TABLES:
+            if token_table in REPORT_LABELER_TABLES:
                 current_table = token_table
                 next_table_default = token_table
                 for v in pending.values():
@@ -1429,7 +1429,7 @@ def _normalize_annotation_labels(values) -> list[str]:
 
     # Parse each input chunk and normalize tokens
     for value in split_inputs(values):
-        exact = J260101_PRESET_LOOKUP.get(value.lower())
+        exact = REPORT_LABELER_PRESET_LOOKUP.get(value.lower())
         if exact:
             normalized.append(exact)
             continue
@@ -1476,7 +1476,7 @@ def _label_to_color(label: str) -> str:
         return "hsl(152, 72%, 42%)"
     row_match = re.search(r"(?:Row|MG)\s+(\d+)", label, flags=re.IGNORECASE)
     if row_match:
-        color = J260101_ROW_LABEL_COLOR_PALETTE.get(row_match.group(1))
+        color = REPORT_LABELER_ROW_LABEL_COLOR_PALETTE.get(row_match.group(1))
         if color:
             return color
     digest = hashlib.sha256(label.encode("utf-8", errors="ignore")).hexdigest()
@@ -1489,7 +1489,7 @@ def _first_video_file_in_folder(folder: Path) -> Path | None:
     try:
         video_candidates: list[Path] = []
         for entry in folder.rglob("*"):
-            if entry.is_file() and entry.suffix.lower() in J260101_VIDEO_EXTENSIONS:
+            if entry.is_file() and entry.suffix.lower() in REPORT_LABELER_VIDEO_EXTENSIONS:
                 video_candidates.append(entry)
         if not video_candidates:
             return None
@@ -1598,7 +1598,7 @@ def _normalize_folder_processing_entry(entry) -> dict:
     source = entry if isinstance(entry, dict) else {}
     instant_source = source.get("instant_off") if isinstance(source.get("instant_off"), dict) else {}
     instant_status = str(instant_source.get("status") or "").strip()
-    if instant_status not in J260101_INSTANT_OFF_STATUS_LABELS:
+    if instant_status not in REPORT_LABELER_INSTANT_OFF_STATUS_LABELS:
         instant_status = "No Video Exists"
     return {
         "instant_off": {
@@ -4020,7 +4020,7 @@ def main() -> None:
     FOLDER_FILTERS = {}
     # Add project-specific filter sets locally if needed.
     # Example:
-    # FOLDER_FILTERS[str(Path(os.environ["J260101_LOCAL_PHOTO_ROOT"]).expanduser())] = {
+    # FOLDER_FILTERS[str(Path(os.environ["REPORT_LABELER_LOCAL_PHOTO_ROOT"]).expanduser())] = {
     #     "label": "Show only priority structures",
     #     "structures": {"123", "456"},
     # }
@@ -4606,13 +4606,13 @@ def main() -> None:
                               doc.documentElement.style.setProperty('--folder-banner-width', bannerWidth + 'px');
                               doc.documentElement.style.setProperty('--selection-bar-height', selectionHeight + 'px');
                               if (doc.body) {{
-                                  doc.body.classList.add('j260101-bottom-dock');
+                                  doc.body.classList.add('report-labeler-bottom-dock');
                               }}
                           }} catch (layoutErr) {{
                               // best-effort layout sync; default CSS vars keep controls usable
                           }}
                       }}
-                      topWindow.__j260101SyncBottomDockLayout = syncBottomDockLayout;
+                      topWindow.__reportLabelerSyncBottomDockLayout = syncBottomDockLayout;
                       syncBottomDockLayout();
                       setTimeout(syncBottomDockLayout, 0);
                       setTimeout(syncBottomDockLayout, 120);
@@ -4656,8 +4656,8 @@ def main() -> None:
                                   }}
                             }};
                         }});
-                        if (activeDoc.__j260101FolderStatusOutsideClick !== true) {{
-                              activeDoc.__j260101FolderStatusOutsideClick = true;
+                        if (activeDoc.__reportLabelerFolderStatusOutsideClick !== true) {{
+                              activeDoc.__reportLabelerFolderStatusOutsideClick = true;
                               activeDoc.addEventListener('click', function(e) {{
                                   const latestBanner = activeDoc.getElementById('folder-banner');
                                   const latestSelectionBar = activeDoc.querySelector('.selection-bar');
@@ -5046,9 +5046,9 @@ def main() -> None:
             return preferred[0] || preferred[1] || currentDocument;
         }}
         parent = resolveInteractionDocument() || currentDocument;
-        const activeScriptToken = 'j260101-' + Date.now() + '-' + Math.random().toString(36).slice(2);
-        const activeScriptKey = '__j260101ActiveScriptToken';
-        const activeTimerKey = '__j260101ActiveTimers';
+        const activeScriptToken = 'report-labeler-' + Date.now() + '-' + Math.random().toString(36).slice(2);
+        const activeScriptKey = '__reportLabelerActiveScriptToken';
+        const activeTimerKey = '__reportLabelerActiveTimers';
         const hostWindow = (parent && parent.defaultView) ? parent.defaultView : window;
         try {{
             const staleTimers = Array.isArray(hostWindow[activeTimerKey]) ? hostWindow[activeTimerKey] : [];
@@ -5096,7 +5096,7 @@ def main() -> None:
         let clipboardStartDragUrl = clipboardServerBase + '/start-drag?paths=';
         const activeFolderPath = {json.dumps(str(folder))};
         const adjacentFolderPreloadThumbnailUrls = {json.dumps(preload_thumbnail_urls)};
-        const baseAnnotationPresetGroups = {json.dumps(J260101_LABEL_PRESET_GROUPS)};
+        const baseAnnotationPresetGroups = {json.dumps(REPORT_LABELER_LABEL_PRESET_GROUPS)};
         const baseAnnotationPresetLabelLookup = (() => {{
             const lookup = Object.create(null);
             Object.keys(baseAnnotationPresetGroups).forEach((tableName) => {{
@@ -5130,22 +5130,22 @@ def main() -> None:
         let annotationPresetGroups = Object.assign({{}}, baseAnnotationPresetGroups);
         let clientAnnotationLabelsByPath = {json.dumps(rendered_annotation_labels_by_path)};
         let clientAnnotationLabelCounts = {json.dumps(rendered_annotation_counts)};
-        const tableStationSuffixes = {json.dumps({k: list(v) for k, v in J260101_TABLE_STATION_SUFFIXES.items()})};
-        const tablePresetOrder = {json.dumps([f"Table {t}" for t in J260101_TABLES])};
+        const tableStationSuffixes = {json.dumps({k: list(v) for k, v in REPORT_LABELER_TABLE_STATION_SUFFIXES.items()})};
+        const tablePresetOrder = {json.dumps([f"Table {t}" for t in REPORT_LABELER_TABLES])};
         const tableSelectionLabelCaps = {{
             "3": 5,
         }};
-        const instantOffStatusChoices = {json.dumps(list(J260101_INSTANT_OFF_STATUS_LABELS))};
-        const labelRenameMapStorageKey = 'j260101-label-rename-map-v1';
-        const stationAnodeStateStorageKey = 'j260101-station-anode-state-v1';
+        const instantOffStatusChoices = {json.dumps(list(REPORT_LABELER_INSTANT_OFF_STATUS_LABELS))};
+        const labelRenameMapStorageKey = 'report-labeler-label-rename-map-v1';
+        const stationAnodeStateStorageKey = 'report-labeler-station-anode-state-v1';
         const tableStationAnodeOptions = [3, 4];
         let tableFourQuickLabels = [];
         let annotationFlatPresets = [];
         let annotationPresetEntries = [];
-        const presetStateStorageKey = 'j260101-annotation-presets-v1';
-        const instantOffStatusStorageKey = 'j260101-instant-off-status-v1';
-        const legacyTableAnodeStateStorageKey = 'j260101-table-anode-state-v1';
-        const legacyStationAnodeStateStorageKey = 'j260101-table-station-anode-state-v1';
+        const presetStateStorageKey = 'report-labeler-annotation-presets-v1';
+        const instantOffStatusStorageKey = 'report-labeler-instant-off-status-v1';
+        const legacyTableAnodeStateStorageKey = 'report-labeler-table-anode-state-v1';
+        const legacyStationAnodeStateStorageKey = 'report-labeler-table-station-anode-state-v1';
         const folderInstantOffStatusState = {json.dumps(instant_off_status)};
         const folderInstantOffStatus = folderInstantOffStatusState && typeof folderInstantOffStatusState.status === 'string'
             ? folderInstantOffStatusState.status
@@ -5159,7 +5159,7 @@ def main() -> None:
                 ? initialFolderProcessingState.empty_slots
                 : {{}}
         );
-        const verificationOverlayStorageKey = 'j260101-verification-overlay-v1';
+        const verificationOverlayStorageKey = 'report-labeler-verification-overlay-v1';
         let verificationOverlayVisible = false;
         let verificationOverlayFrame = null;
         let selectionDebugPanelVisible = false;
@@ -8220,7 +8220,7 @@ def main() -> None:
             if (!urls.length) {{
                 return;
             }}
-            const preloadKey = '__j260101AdjacentFolderPreload';
+            const preloadKey = '__reportLabelerAdjacentFolderPreload';
             const state = hostWindow[preloadKey] || {{
                 seen: Object.create(null),
                 inflight: Object.create(null),
@@ -8427,10 +8427,10 @@ def main() -> None:
             }}
 
             const ensureDelegatedSelectionHandlers = (targetDoc) => {{
-                if (!targetDoc || !targetDoc.addEventListener || targetDoc.__j260101DelegatedHandlersBound) {{
+                if (!targetDoc || !targetDoc.addEventListener || targetDoc.__reportLabelerDelegatedHandlersBound) {{
                     return;
                 }}
-                targetDoc.__j260101DelegatedHandlersBound = true;
+                targetDoc.__reportLabelerDelegatedHandlersBound = true;
                 targetDoc.addEventListener('click', function(e) {{
                     const clickTarget = e && e.target ? (e.target.nodeType === 3 ? e.target.parentElement : e.target) : null;
                     const container = clickTarget && clickTarget.closest ? clickTarget.closest('.img-container') : null;
@@ -8455,16 +8455,16 @@ def main() -> None:
                     const enlargeBtn = container.querySelector('.enlarge-btn');
                     const imgPath = getContainerPath(container);
 
-                    if (container.dataset.j260101ClickBound !== '1') {{
-                        container.dataset.j260101ClickBound = '1';
+                    if (container.dataset.reportLabelerClickBound !== '1') {{
+                        container.dataset.reportLabelerClickBound = '1';
                         container.addEventListener('click', function(e) {{
                             return handleContainerClick(e);
                         }}, true);
                     }}
 
                     // Bind action buttons once per container
-                    if (container.dataset.j260101Bound !== '1') {{
-                        container.dataset.j260101Bound = '1';
+                    if (container.dataset.reportLabelerBound !== '1') {{
+                        container.dataset.reportLabelerBound = '1';
 
                         // Click handler for copy button
                         if (copyBtn) {{
@@ -8525,8 +8525,8 @@ def main() -> None:
 
                     // Track hover for Hammerspoon (always enabled)
                     if (imgPath) {{
-                        if (container.dataset.j260101HoverBound !== '1') {{
-                            container.dataset.j260101HoverBound = '1';
+                        if (container.dataset.reportLabelerHoverBound !== '1') {{
+                            container.dataset.reportLabelerHoverBound = '1';
                     container.addEventListener('mouseenter', function() {{
                         if (lastHoveredPath === imgPath) return;
                         lastHoveredPath = imgPath;
@@ -8556,13 +8556,13 @@ def main() -> None:
                         }}
                     }}
 
-                    if (container.dataset.j260101AutoBatchDblBound !== '1') {{
-                        container.dataset.j260101AutoBatchDblBound = '1';
+                    if (container.dataset.reportLabelerAutoBatchDblBound !== '1') {{
+                        container.dataset.reportLabelerAutoBatchDblBound = '1';
                         container.addEventListener('dblclick', handleContainerDoubleClick, true);
                     }}
 
-                    if (container.dataset.j260101DragBound !== '1') {{
-                        container.dataset.j260101DragBound = '1';
+                    if (container.dataset.reportLabelerDragBound !== '1') {{
+                        container.dataset.reportLabelerDragBound = '1';
                         container.setAttribute('draggable', 'true');
                         container.addEventListener('dragstart', async function(e) {{
                             // If dragging an unselected item, select it first
@@ -9569,7 +9569,7 @@ def main() -> None:
                 return;
             }}
             foldButton.dataset.foldBound = '1';
-            const storageKey = 'j260101-selection-bar-folded-v1';
+            const storageKey = 'report-labeler-selection-bar-folded-v1';
             const setFolded = (nextFolded) => {{
                 if (parent.body) {{
                     parent.body.classList.toggle('selection-bar-folded', Boolean(nextFolded));
@@ -9598,8 +9598,8 @@ def main() -> None:
                   const folded = parent.body && parent.body.classList.contains('selection-bar-folded');
                   setFolded(!folded);
                   syncLabel();
-                  if (parent.defaultView && typeof parent.defaultView.__j260101SyncBottomDockLayout === 'function') {{
-                      parent.defaultView.__j260101SyncBottomDockLayout();
+                  if (parent.defaultView && typeof parent.defaultView.__reportLabelerSyncBottomDockLayout === 'function') {{
+                      parent.defaultView.__reportLabelerSyncBottomDockLayout();
                   }}
               }});
             if (bar.dataset.foldRestoreBound !== '1') {{
@@ -9612,8 +9612,8 @@ def main() -> None:
                     event.stopPropagation();
                       setFolded(false);
                       syncLabel();
-                      if (parent.defaultView && typeof parent.defaultView.__j260101SyncBottomDockLayout === 'function') {{
-                          parent.defaultView.__j260101SyncBottomDockLayout();
+                      if (parent.defaultView && typeof parent.defaultView.__reportLabelerSyncBottomDockLayout === 'function') {{
+                          parent.defaultView.__reportLabelerSyncBottomDockLayout();
                       }}
                   }});
               }}
@@ -9631,8 +9631,8 @@ def main() -> None:
                   parent.body.appendChild(bar);
               }}
               bar.style.display = 'flex';
-              if (parent.defaultView && typeof parent.defaultView.__j260101SyncBottomDockLayout === 'function') {{
-                  parent.defaultView.__j260101SyncBottomDockLayout();
+              if (parent.defaultView && typeof parent.defaultView.__reportLabelerSyncBottomDockLayout === 'function') {{
+                  parent.defaultView.__reportLabelerSyncBottomDockLayout();
               }}
 
               syncSelectionStateWithDom();
@@ -10277,10 +10277,10 @@ def main() -> None:
             if (!isActiveScriptInstance()) {{
                 return;
             }}
-            if (!e || e.__j260101ContainerHandled) {{
+            if (!e || e.__reportLabelerContainerHandled) {{
                 return;
             }}
-            e.__j260101ContainerHandled = true;
+            e.__reportLabelerContainerHandled = true;
             const clickTarget = e.target && e.target.nodeType === 3 ? e.target.parentElement : e.target;
             const container = clickTarget && clickTarget.closest ? clickTarget.closest('.img-container') : null;
             if (!container) return;
@@ -10395,7 +10395,7 @@ def main() -> None:
             removeAutoBatchLabelClick(action);
         }}
 
-        window.__j260101ContainerClick = function(evt, node) {{
+        window.__reportLabelerContainerClick = function(evt, node) {{
             const resolved = evt && evt.target ? evt : {{
                 target: node || null,
                 metaKey: false,

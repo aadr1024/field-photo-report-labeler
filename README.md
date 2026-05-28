@@ -1,4 +1,4 @@
-# J260101 Article Reports
+# Field Photo Report Labeler
 
 A Streamlit image-labeling workflow for turning field photo sets into structured report evidence. The app is optimized for fast visual review: keyboard navigation, persistent image labels, table-oriented presets, folder status checks, and metadata exports for downstream report automation.
 
@@ -41,9 +41,9 @@ Photos are treated as a replaceable local cache. Labels and folder state are the
 The sync scripts use environment variables so private paths do not need to be committed.
 
 ```bash
-export J260101_DRIVE_PHOTO_SOURCE="$HOME/Library/CloudStorage/GoogleDrive-ACCOUNT/Shared drives/J260101/Site photos"
-export J260101_LOCAL_PHOTO_ROOT="$HOME/Downloads/MT/j260101 local/site-photos"
-export J260101_METADATA_BACKUP_DIR="$HOME/Library/CloudStorage/GoogleDrive-ACCOUNT/My Drive/J260101 labeled data sync"
+export REPORT_LABELER_DRIVE_PHOTO_SOURCE="$HOME/Library/CloudStorage/GoogleDrive-ACCOUNT/Shared drives/FieldPhotoReportLabeler/Site photos"
+export REPORT_LABELER_LOCAL_PHOTO_ROOT="$HOME/Downloads/MT/report-labeler local/site-photos"
+export REPORT_LABELER_METADATA_BACKUP_DIR="$HOME/Library/CloudStorage/GoogleDrive-ACCOUNT/My Drive/field photo report labeled data sync"
 ```
 
 ## Run the app
@@ -64,7 +64,7 @@ Helper scripts are included for the local workflow:
 Copy missing media from the configured cloud source into the local processing root:
 
 ```bash
-python3 sync_j260101_site_photos.py
+python3 sync_site_photos.py
 ```
 
 The importer creates real local files, never symlinks, and does not overwrite existing files except zero-byte placeholders.
@@ -72,7 +72,7 @@ The importer creates real local files, never symlinks, and does not overwrite ex
 ## Export labeled-data metadata
 
 ```bash
-python3 sync_j260101_labeled_data.py
+python3 sync_labeled_data.py
 ```
 
 The export writes metadata-only snapshots. It does not copy photos.
@@ -82,7 +82,7 @@ The export writes metadata-only snapshots. It does not copy photos.
 Install the LaunchAgent template:
 
 ```bash
-automation/install_j260101_photo_sync_launch_agent.sh
+automation/install_photo_sync_launch_agent.sh
 ```
 
 Policy:
@@ -96,10 +96,10 @@ Policy:
 
 ```text
 image_grid_app.py                         Streamlit labeling app
-sync_j260101_site_photos.py               local photo-cache importer
-sync_j260101_labeled_data.py              metadata-only backup exporter
+sync_site_photos.py               local photo-cache importer
+sync_labeled_data.py              metadata-only backup exporter
 automation/                               launchd sync helper
-docs/j260101_labeled_data_storage.md      storage policy notes
+docs/labeled_data_storage.md      storage policy notes
 ```
 
 ## Notes

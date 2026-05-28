@@ -3,9 +3,9 @@
 .folder_memory.json
 .image_index.json
 .interaction_log.json
-.j260101-article-reports-annotations.json
-.j260101-article-reports-annotations.json.bak-*
-.j260101-article-reports-folder-state.json
+.field-photo-report-labeler-annotations.json
+.field-photo-report-labeler-annotations.json.bak-*
+.field-photo-report-labeler-folder-state.json
 .last_hover.txt
 .streamlit-restart.log
 .ui_state.json

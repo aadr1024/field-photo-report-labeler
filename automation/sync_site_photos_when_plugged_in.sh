@@ -3,7 +3,7 @@ set -u
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "$0")" && pwd -P)"
 APP_DIR="$(cd -- "$SCRIPT_DIR/.." && pwd -P)"
-SYNC_SCRIPT="$APP_DIR/sync_j260101_site_photos.py"
+SYNC_SCRIPT="$APP_DIR/sync_site_photos.py"
 STATE_DIR="$APP_DIR/.automation"
 LOG_DIR="$STATE_DIR/logs"
 LOCK_DIR="$STATE_DIR/photo-sync.lock"

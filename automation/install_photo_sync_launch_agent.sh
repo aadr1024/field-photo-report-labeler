@@ -1,7 +1,7 @@
 #!/bin/zsh
 set -euo pipefail
 
-LABEL="com.aadr1024.j260101-site-photos-sync"
+LABEL="com.aadr1024.field-photo-report-labeler.photo-sync"
 SCRIPT_DIR="$(cd -- "$(dirname -- "$0")" && pwd -P)"
 APP_DIR="$(cd -- "$SCRIPT_DIR/.." && pwd -P)"
 PLIST_SRC="$SCRIPT_DIR/$LABEL.plist"

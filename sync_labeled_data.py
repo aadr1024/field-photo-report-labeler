@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Export J260101 labeled-data metadata without touching source photos."""
+"""Export field photo report labeled-data metadata without touching source photos."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-PROJECT = "J260101"
+PROJECT = "FieldPhotoReportLabeler"
 APP_DIR = Path(__file__).resolve().parent
 
 
@@ -19,19 +19,19 @@ def env_path(name: str, fallback: str) -> Path:
     return Path(os.environ.get(name, fallback)).expanduser()
 
 
-LOCAL_PHOTO_ROOT = env_path("J260101_LOCAL_PHOTO_ROOT", "~/Downloads/MT/j260101 local/site-photos")
+LOCAL_PHOTO_ROOT = env_path("REPORT_LABELER_LOCAL_PHOTO_ROOT", "~/Downloads/MT/report-labeler local/site-photos")
 DRIVE_PHOTO_SOURCE = env_path(
-    "J260101_DRIVE_PHOTO_SOURCE",
-    "~/Library/CloudStorage/GoogleDrive-ACCOUNT/Shared drives/J260101/Site photos",
+    "REPORT_LABELER_DRIVE_PHOTO_SOURCE",
+    "~/Library/CloudStorage/GoogleDrive-ACCOUNT/Shared drives/FieldPhotoReportLabeler/Site photos",
 )
 DEFAULT_LOCAL_BACKUP_DIR = APP_DIR / "labeled-data-backups"
 DEFAULT_DRIVE_BACKUP_DIR = env_path(
-    "J260101_METADATA_BACKUP_DIR",
-    "~/Library/CloudStorage/GoogleDrive-ACCOUNT/My Drive/J260101 labeled data sync",
+    "REPORT_LABELER_METADATA_BACKUP_DIR",
+    "~/Library/CloudStorage/GoogleDrive-ACCOUNT/My Drive/field photo report labeled data sync",
 )
 METADATA_FILES = {
-    "annotations": ".j260101-article-reports-annotations.json",
-    "folder_state": ".j260101-article-reports-folder-state.json",
+    "annotations": ".field-photo-report-labeler-annotations.json",
+    "folder_state": ".field-photo-report-labeler-folder-state.json",
 }
 OPTIONAL_METADATA_FILES = {
     "folder_memory": ".folder_memory.json",
@@ -89,7 +89,7 @@ def build_payload() -> dict[str, Any]:
 
     return {
         "project": PROJECT,
-        "artifact_type": "J260101 labeled data backup",
+        "artifact_type": "field photo report labeled data backup",
         "created_at_utc": created_at,
         "app_metadata_source_dir": str(APP_DIR),
         "local_photo_processing_root": str(LOCAL_PHOTO_ROOT),
@@ -112,8 +112,8 @@ def export_to_destination(dest: Path, payload: dict[str, Any], timestamp: str) -
     snapshot_dir.mkdir(parents=True, exist_ok=True)
 
     outputs: dict[str, str] = {}
-    latest_payload = dest / "J260101_labeled_data_latest.json"
-    snapshot_payload = snapshot_dir / f"J260101_labeled_data_{timestamp}.json"
+    latest_payload = dest / "field_photo_report_labeler_labeled_data_latest.json"
+    snapshot_payload = snapshot_dir / f"field_photo_report_labeler_labeled_data_{timestamp}.json"
     write_json(latest_payload, payload)
     write_json(snapshot_payload, payload)
     outputs["latest_payload"] = str(latest_payload)
@@ -121,18 +121,18 @@ def export_to_destination(dest: Path, payload: dict[str, Any], timestamp: str) -
 
     for key, filename in METADATA_FILES.items():
         source = APP_DIR / filename
-        latest = dest / f"J260101_labeled_data_{key}.json"
+        latest = dest / f"field_photo_report_labeler_labeled_data_{key}.json"
         if copy_if_exists(source, latest):
             outputs[f"latest_{key}"] = str(latest)
 
-    manifest = dest / "README_J260101_labeled_data_sync.md"
+    manifest = dest / "README_field_photo_report_labeler_labeled_data_sync.md"
     manifest.write_text(
-        "# J260101 labeled data sync\n\n"
+        "# field photo report labeled data sync\n\n"
         "This folder stores metadata backups only. It must not be used as a photo processing root.\n\n"
         f"- Local processing root: `{LOCAL_PHOTO_ROOT}`\n"
         f"- App metadata source: `{APP_DIR}`\n"
         f"- Drive photo source is read-only reference only: `{DRIVE_PHOTO_SOURCE}`\n"
-        "- Latest backup: `J260101_labeled_data_latest.json`\n"
+        "- Latest backup: `field_photo_report_labeler_labeled_data_latest.json`\n"
         "- Timestamped backups: `snapshots/`\n",
     )
     outputs["readme"] = str(manifest)
@@ -141,7 +141,7 @@ def export_to_destination(dest: Path, payload: dict[str, Any], timestamp: str) -
 
 
 def parse_snapshot_time(path: Path) -> datetime | None:
-    prefix = "J260101_labeled_data_"
+    prefix = "field_photo_report_labeler_labeled_data_"
     suffix = ".json"
     name = path.name
     if not name.startswith(prefix) or not name.endswith(suffix):
@@ -155,7 +155,7 @@ def parse_snapshot_time(path: Path) -> datetime | None:
 
 def latest_snapshot_time(folder: Path) -> datetime | None:
     latest: datetime | None = None
-    for path in folder.glob("J260101_labeled_data_*.json"):
+    for path in folder.glob("field_photo_report_labeler_labeled_data_*.json"):
         parsed = parse_snapshot_time(path)
         if parsed and (latest is None or parsed > latest):
             latest = parsed
@@ -168,7 +168,7 @@ def write_cadence_snapshots(dest: Path, payload: dict[str, Any], timestamp: str)
     for folder_name, label, interval_seconds in SYNC_CADENCES:
         folder = dest / folder_name
         folder.mkdir(parents=True, exist_ok=True)
-        latest = folder / "J260101_labeled_data_latest.json"
+        latest = folder / "field_photo_report_labeler_labeled_data_latest.json"
         write_json(latest, payload)
 
         last = latest_snapshot_time(folder)
@@ -180,7 +180,7 @@ def write_cadence_snapshots(dest: Path, payload: dict[str, Any], timestamp: str)
             "snapshot_written": False,
         }
         if due:
-            snapshot = folder / f"J260101_labeled_data_{timestamp}.json"
+            snapshot = folder / f"field_photo_report_labeler_labeled_data_{timestamp}.json"
             write_json(snapshot, payload)
             entry["snapshot_written"] = True
             entry["snapshot_payload"] = str(snapshot)
@@ -189,12 +189,12 @@ def write_cadence_snapshots(dest: Path, payload: dict[str, Any], timestamp: str)
 
         readme = folder / "README.md"
         readme.write_text(
-            f"# J260101 {label}\\n\\n"
+            f"# Field Photo Report Labeler {label}\\n\\n"
             "This folder stores metadata-only labeled-data snapshots. It does not store photos.\\n\\n"
             f"- Cadence: {label}\\n"
             f"- Interval seconds: {interval_seconds}\\n"
-            "- `J260101_labeled_data_latest.json` is refreshed every sync run.\\n"
-            "- Timestamped `J260101_labeled_data_*.json` files are kept and not deleted by this script.\\n"
+            "- `field_photo_report_labeler_labeled_data_latest.json` is refreshed every sync run.\\n"
+            "- Timestamped `field_photo_report_labeler_labeled_data_*.json` files are kept and not deleted by this script.\\n"
         )
         entry["readme"] = str(readme)
         result[folder_name] = entry
@@ -202,7 +202,7 @@ def write_cadence_snapshots(dest: Path, payload: dict[str, Any], timestamp: str)
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Export J260101 labeled-data metadata backups.")
+    parser = argparse.ArgumentParser(description="Export field photo report labeled-data metadata backups.")
     parser.add_argument("--dest", action="append", type=Path, default=[], help="Backup destination. Repeatable.")
     parser.add_argument("--no-default-local", action="store_true", help="Do not write the repo-local backup copy.")
     parser.add_argument("--allow-cloud-dest", action="store_true", help="Allow writing metadata backup files into CloudStorage.")

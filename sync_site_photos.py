@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Copy missing J260101 media from Drive source into local processing cache.
+"""Copy missing field photo report media from Drive source into local processing cache.
 
 Drive is read-only source. Local site-photos is the only app processing root.
 This script creates real local files, never symlinks, and never overwrites by default.
@@ -15,7 +15,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterable
 
-PROJECT = "J260101"
+PROJECT = "FieldPhotoReportLabeler"
 
 
 def env_path(name: str, fallback: str) -> Path:
@@ -23,10 +23,10 @@ def env_path(name: str, fallback: str) -> Path:
 
 
 DRIVE_PHOTO_SOURCE = env_path(
-    "J260101_DRIVE_PHOTO_SOURCE",
-    "~/Library/CloudStorage/GoogleDrive-ACCOUNT/Shared drives/J260101/Site photos",
+    "REPORT_LABELER_DRIVE_PHOTO_SOURCE",
+    "~/Library/CloudStorage/GoogleDrive-ACCOUNT/Shared drives/FieldPhotoReportLabeler/Site photos",
 )
-LOCAL_PHOTO_ROOT = env_path("J260101_LOCAL_PHOTO_ROOT", "~/Downloads/MT/j260101 local/site-photos")
+LOCAL_PHOTO_ROOT = env_path("REPORT_LABELER_LOCAL_PHOTO_ROOT", "~/Downloads/MT/report-labeler local/site-photos")
 APP_DIR = Path(__file__).resolve().parent
 MANIFEST_DIR = APP_DIR / "photo-import-manifests"
 MEDIA_EXTENSIONS = {
@@ -134,7 +134,7 @@ def copy_missing_media(source_root: Path, local_root: Path, dry_run: bool) -> di
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Import missing J260101 site media into local processing cache.")
+    parser = argparse.ArgumentParser(description="Import missing field photo report media into local processing cache.")
     parser.add_argument("--source", type=Path, default=DRIVE_PHOTO_SOURCE)
     parser.add_argument("--local-root", type=Path, default=LOCAL_PHOTO_ROOT)
     parser.add_argument("--dry-run", action="store_true")
@@ -143,8 +143,8 @@ def main() -> int:
     manifest = copy_missing_media(args.source, args.local_root, args.dry_run)
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     MANIFEST_DIR.mkdir(parents=True, exist_ok=True)
-    manifest_path = MANIFEST_DIR / f"J260101_photo_import_{timestamp}.json"
-    latest_path = MANIFEST_DIR / "J260101_photo_import_latest.json"
+    manifest_path = MANIFEST_DIR / f"field_photo_report_labeler_photo_import_{timestamp}.json"
+    latest_path = MANIFEST_DIR / "field_photo_report_labeler_photo_import_latest.json"
     payload = json.dumps(manifest, indent=2, sort_keys=True) + "\n"
     manifest_path.write_text(payload)
     latest_path.write_text(payload)
