@@ -777,20 +777,26 @@ class ClipboardHandler(BaseHTTPRequestHandler):
                     self.wfile.write(b'{"error": "not_found"}')
                     return
 
-                thumbnail_bytes = _build_thumbnail_bytes(img_path=img_path, max_size=max_size, full_quality=full_quality)
-                self.send_response(200)
-                self.send_header('Content-type', 'image/jpeg')
-                self.send_header('Content-Length', str(len(thumbnail_bytes)))
-                self.send_header('Cache-Control', 'public, max-age=3600')
-                self.send_header('Access-Control-Allow-Origin', '*')
-                self.end_headers()
-                self.wfile.write(thumbnail_bytes)
-                log_interaction("thumbnail_request", {
-                    "path": img_path,
-                    "full_quality": full_quality,
-                    "max_size": max_size,
-                    "bytes": len(thumbnail_bytes),
-                })
+                  thumbnail_start = time.perf_counter()
+                  thumbnail_bytes = _build_thumbnail_bytes(img_path=img_path, max_size=max_size, full_quality=full_quality)
+                  thumbnail_build_ms = (time.perf_counter() - thumbnail_start) * 1000
+                  self.send_response(200)
+                  self.send_header('Content-type', 'image/jpeg')
+                  self.send_header('Content-Length', str(len(thumbnail_bytes)))
+                  self.send_header('Cache-Control', 'public, max-age=3600')
+                  self.send_header('Access-Control-Allow-Origin', '*')
+                  self.send_header('Timing-Allow-Origin', '*')
+                  self.send_header('Server-Timing', f'thumbnail;dur={thumbnail_build_ms:.2f}')
+                  self.send_header('X-Thumbnail-Build-Ms', f'{thumbnail_build_ms:.2f}')
+                  self.end_headers()
+                  self.wfile.write(thumbnail_bytes)
+                  log_interaction("thumbnail_request", {
+                      "path": img_path,
+                      "full_quality": full_quality,
+                      "max_size": max_size,
+                      "bytes": len(thumbnail_bytes),
+                      "build_ms": round(thumbnail_build_ms, 2),
+                  })
             except Exception as exc:
                 import traceback
                 error_message = f"{type(exc).__name__}: {exc}"
@@ -3602,16 +3608,174 @@ def main() -> None:
         .selection-debug-panel-close:hover {
             background: rgba(255, 255, 255, 0.2);
         }
-        .selection-debug-panel-body {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-            font-size: 11px;
-        }
-        .selection-debug-item {
-            display: flex;
-            align-items: center;
-            gap: 6px;
+          .selection-debug-panel-body {
+              display: flex;
+              flex-direction: column;
+              gap: 5px;
+              font-size: 11px;
+          }
+          .image-load-metrics-panel {
+              position: fixed;
+              top: 64px;
+              right: 16px;
+              z-index: 2147483646;
+              width: min(460px, calc(100vw - 32px));
+              max-height: min(68vh, 620px);
+              overflow: hidden;
+              background: rgba(7, 12, 18, 0.94);
+              color: #f8fafc;
+              border: 1px solid rgba(148, 163, 184, 0.28);
+              border-radius: 16px;
+              box-shadow: 0 18px 44px rgba(0, 0, 0, 0.38);
+              backdrop-filter: blur(8px);
+              font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+              pointer-events: auto;
+          }
+          .image-load-metrics-panel.collapsed {
+              width: auto;
+              max-width: min(560px, calc(100vw - 32px));
+          }
+          .image-load-metrics-panel .metrics-header {
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              gap: 10px;
+              padding: 9px 11px;
+              border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+              cursor: pointer;
+          }
+          .image-load-metrics-panel.collapsed .metrics-header {
+              border-bottom: 0;
+          }
+          .image-load-metrics-panel .metrics-title {
+              display: inline-flex;
+              align-items: center;
+              gap: 8px;
+              min-width: 0;
+              font-size: 12px;
+              font-weight: 900;
+              letter-spacing: 0.02em;
+              white-space: nowrap;
+          }
+          .image-load-metrics-panel .metrics-pulse {
+              width: 8px;
+              height: 8px;
+              border-radius: 999px;
+              background: #22c55e;
+              box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.16);
+          }
+          .image-load-metrics-panel.has-pending .metrics-pulse {
+              background: #facc15;
+              box-shadow: 0 0 0 4px rgba(250, 204, 21, 0.15);
+          }
+          .image-load-metrics-panel.has-errors .metrics-pulse {
+              background: #ef4444;
+              box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.15);
+          }
+          .image-load-metrics-panel .metrics-summary-line {
+              color: rgba(226, 232, 240, 0.78);
+              font-size: 11px;
+              white-space: nowrap;
+          }
+          .image-load-metrics-panel .metrics-toggle {
+              border: 1px solid rgba(255, 255, 255, 0.16);
+              background: rgba(255, 255, 255, 0.08);
+              color: #e5e7eb;
+              border-radius: 999px;
+              padding: 2px 8px;
+              font-size: 11px;
+              font-weight: 800;
+              cursor: pointer;
+          }
+          .image-load-metrics-panel .metrics-body {
+              padding: 10px 11px 12px;
+              overflow: auto;
+              max-height: calc(min(68vh, 620px) - 42px);
+          }
+          .image-load-metrics-panel.collapsed .metrics-body {
+              display: none;
+          }
+          .image-load-metrics-panel .metrics-grid {
+              display: grid;
+              grid-template-columns: repeat(4, minmax(0, 1fr));
+              gap: 6px;
+              margin-bottom: 9px;
+          }
+          .image-load-metrics-panel .metric-card {
+              border: 1px solid rgba(148, 163, 184, 0.16);
+              background: rgba(255, 255, 255, 0.045);
+              border-radius: 10px;
+              padding: 6px;
+              min-width: 0;
+          }
+          .image-load-metrics-panel .metric-value {
+              font-size: 14px;
+              font-weight: 950;
+              line-height: 1.1;
+          }
+          .image-load-metrics-panel .metric-label {
+              margin-top: 2px;
+              color: rgba(226, 232, 240, 0.62);
+              font-size: 9px;
+              font-weight: 800;
+              text-transform: uppercase;
+              letter-spacing: 0.04em;
+          }
+          .image-load-metrics-panel .metrics-section-title {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              margin: 9px 0 5px;
+              color: rgba(226, 232, 240, 0.72);
+              font-size: 10px;
+              font-weight: 950;
+              letter-spacing: 0.06em;
+              text-transform: uppercase;
+          }
+          .image-load-metrics-panel .metrics-list {
+              display: grid;
+              gap: 4px;
+          }
+          .image-load-metrics-panel .metrics-row {
+              display: grid;
+              grid-template-columns: minmax(0, 1fr) auto;
+              align-items: center;
+              gap: 8px;
+              padding: 5px 7px;
+              border-radius: 9px;
+              background: rgba(255, 255, 255, 0.045);
+              border: 1px solid rgba(148, 163, 184, 0.12);
+              font-size: 11px;
+          }
+          .image-load-metrics-panel .metrics-row.clickable {
+              cursor: pointer;
+          }
+          .image-load-metrics-panel .metrics-row.clickable:hover {
+              border-color: rgba(250, 204, 21, 0.42);
+              background: rgba(250, 204, 21, 0.09);
+          }
+          .image-load-metrics-panel .metrics-row-name {
+              min-width: 0;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              white-space: nowrap;
+              color: rgba(248, 250, 252, 0.9);
+          }
+          .image-load-metrics-panel .metrics-row-value {
+              color: #bfdbfe;
+              font-weight: 900;
+              white-space: nowrap;
+          }
+          .image-load-metrics-panel .metrics-note {
+              margin-top: 8px;
+              color: rgba(226, 232, 240, 0.54);
+              font-size: 10px;
+              line-height: 1.35;
+          }
+          .selection-debug-item {
+              display: flex;
+              align-items: center;
+              gap: 6px;
             padding: 4px 6px;
             border: 1px solid rgba(255, 255, 255, 0.18);
             border-radius: 8px;
@@ -5173,6 +5337,424 @@ def main() -> None:
         const annotationUndoStack = [];
         const annotationRedoStack = [];
         const annotationHistoryLimit = 80;
+        const imageLoadMetricsKey = '__reportLabelerImageLoadMetricsV2';
+        const imageLoadMetricsPanelStorageKey = 'report-labeler-image-load-metrics-panel-v1';
+        const imageLoadMetricsState = (() => {{
+            const existing = hostWindow[imageLoadMetricsKey] && typeof hostWindow[imageLoadMetricsKey] === 'object'
+                ? hostWindow[imageLoadMetricsKey]
+                : {{}};
+            if (!existing.folderRecords || typeof existing.folderRecords !== 'object') {{
+                existing.folderRecords = Object.create(null);
+            }}
+            existing.current = {{
+                token: activeScriptToken,
+                folder: activeFolderPath || 'current folder',
+                startedAt: metricsNow(),
+                total: 0,
+                records: Object.create(null),
+            }};
+            hostWindow[imageLoadMetricsKey] = existing;
+            return existing;
+        }})();
+        let imageLoadMetricsRenderQueued = false;
+
+        function metricsNow() {{
+            const perf = hostWindow.performance || window.performance;
+            return perf && typeof perf.now === 'function' ? perf.now() : Date.now();
+        }}
+
+        function basenameFromPath(raw) {{
+            const value = String(raw || '');
+            const parts = value.split(/[\\\\/]/).filter(Boolean);
+            return parts.length ? parts[parts.length - 1] : value;
+        }}
+
+        function escapeMetricHtml(raw) {{
+            return String(raw == null ? '' : raw)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }}
+
+        function formatMetricMs(value) {{
+            const number = Number(value);
+            if (!Number.isFinite(number)) {{
+                return 'n/a';
+            }}
+            if (number < 10) {{
+                return number.toFixed(1) + 'ms';
+            }}
+            if (number < 1000) {{
+                return Math.round(number) + 'ms';
+            }}
+            return (number / 1000).toFixed(2) + 's';
+        }}
+
+        function formatMetricBytes(value) {{
+            const number = Number(value || 0);
+            if (!Number.isFinite(number) || number <= 0) {{
+                return '0 B';
+            }}
+            if (number < 1024) {{
+                return Math.round(number) + ' B';
+            }}
+            if (number < 1024 * 1024) {{
+                return (number / 1024).toFixed(1) + ' KB';
+            }}
+            return (number / (1024 * 1024)).toFixed(1) + ' MB';
+        }}
+
+        function percentile(sortedNumbers, percentileValue) {{
+            if (!sortedNumbers.length) {{
+                return null;
+            }}
+            const index = Math.min(sortedNumbers.length - 1, Math.max(0, Math.ceil((percentileValue / 100) * sortedNumbers.length) - 1));
+            return sortedNumbers[index];
+        }}
+
+        function getResourceTiming(src) {{
+            const perf = hostWindow.performance || window.performance;
+            if (!perf || !src || typeof perf.getEntriesByName !== 'function') {{
+                return {{}};
+            }}
+            try {{
+                const entries = perf.getEntriesByName(src, 'resource');
+                const entry = entries && entries.length ? entries[entries.length - 1] : null;
+                if (!entry) {{
+                    return {{}};
+                }}
+                let thumbnailServerMs = null;
+                if (Array.isArray(entry.serverTiming)) {{
+                    const thumbnailTiming = entry.serverTiming.find((item) => item && (item.name === 'thumbnail' || item.name === 'thumb'));
+                    if (thumbnailTiming && Number.isFinite(Number(thumbnailTiming.duration))) {{
+                        thumbnailServerMs = Number(thumbnailTiming.duration);
+                    }}
+                }}
+                return {{
+                    resourceMs: Number.isFinite(entry.duration) ? entry.duration : null,
+                    ttfbMs: Number.isFinite(entry.responseStart) && Number.isFinite(entry.requestStart) && entry.responseStart >= entry.requestStart
+                        ? entry.responseStart - entry.requestStart
+                        : null,
+                    transferBytes: Number(entry.transferSize || 0),
+                    encodedBytes: Number(entry.encodedBodySize || 0),
+                    decodedBytes: Number(entry.decodedBodySize || 0),
+                    thumbnailServerMs,
+                    cacheLikely: Number(entry.transferSize || 0) === 0 && Number(entry.decodedBodySize || 0) > 0,
+                }};
+            }} catch (err) {{
+                return {{}};
+            }}
+        }}
+
+        function getEffectiveLoadMs(record) {{
+            const resourceMs = Number(record && record.resourceMs);
+            if (Number.isFinite(resourceMs) && resourceMs > 0) {{
+                return resourceMs;
+            }}
+            const observedMs = Number(record && record.observedMs);
+            if (Number.isFinite(observedMs) && observedMs >= 0) {{
+                return observedMs;
+            }}
+            return null;
+        }}
+
+        function summarizeImageLoadRecords(records) {{
+            const list = Array.isArray(records) ? records : [];
+            const durations = list
+                .map(getEffectiveLoadMs)
+                .filter((value) => Number.isFinite(value))
+                .sort((a, b) => a - b);
+            const loaded = list.filter((record) => record.status === 'loaded' || record.status === 'preloaded').length;
+            const failed = list.filter((record) => record.status === 'error' || record.status === 'preload-error').length;
+            const pending = list.filter((record) => record.status === 'pending').length;
+            const transferBytes = list.reduce((sum, record) => sum + Number(record.transferBytes || 0), 0);
+            const serverDurations = list
+                .map((record) => Number(record.thumbnailServerMs))
+                .filter((value) => Number.isFinite(value))
+                .sort((a, b) => a - b);
+            return {{
+                total: list.length,
+                loaded,
+                failed,
+                pending,
+                measured: durations.length,
+                avg: durations.length ? durations.reduce((sum, value) => sum + value, 0) / durations.length : null,
+                p50: percentile(durations, 50),
+                p90: percentile(durations, 90),
+                p95: percentile(durations, 95),
+                max: durations.length ? durations[durations.length - 1] : null,
+                transferBytes,
+                serverAvg: serverDurations.length ? serverDurations.reduce((sum, value) => sum + value, 0) / serverDurations.length : null,
+                serverP95: percentile(serverDurations, 95),
+            }};
+        }}
+
+        function getCurrentMetricRecords() {{
+            const current = imageLoadMetricsState.current || {{}};
+            return Object.values(current.records || {{}});
+        }}
+
+        function getSessionMetricRecords() {{
+            const out = [];
+            Object.values(imageLoadMetricsState.folderRecords || {{}}).forEach((folderRecords) => {{
+                Object.values(folderRecords || {{}}).forEach((record) => out.push(record));
+            }});
+            return out;
+        }}
+
+        function upsertImageLoadRecord(record) {{
+            if (!record || !record.key) {{
+                return;
+            }}
+            const folderKey = record.folder || activeFolderPath || 'current folder';
+            if (!imageLoadMetricsState.folderRecords[folderKey]) {{
+                imageLoadMetricsState.folderRecords[folderKey] = Object.create(null);
+            }}
+            imageLoadMetricsState.folderRecords[folderKey][record.key] = Object.assign({{}}, record);
+        }}
+
+        function scheduleImageLoadMetricsRender() {{
+            if (imageLoadMetricsRenderQueued) {{
+                return;
+            }}
+            imageLoadMetricsRenderQueued = true;
+            const render = () => {{
+                imageLoadMetricsRenderQueued = false;
+                renderImageLoadMetricsPanel();
+            }};
+            if (hostWindow.requestAnimationFrame) {{
+                hostWindow.requestAnimationFrame(render);
+            }} else {{
+                window.setTimeout(render, 16);
+            }}
+        }}
+
+        function isImageMetricsCollapsed() {{
+            try {{
+                return hostWindow.localStorage.getItem(imageLoadMetricsPanelStorageKey) === 'collapsed';
+            }} catch (err) {{
+                return true;
+            }}
+        }}
+
+        function setImageMetricsCollapsed(nextCollapsed) {{
+            try {{
+                hostWindow.localStorage.setItem(imageLoadMetricsPanelStorageKey, nextCollapsed ? 'collapsed' : 'expanded');
+            }} catch (err) {{
+                // ignore storage failures; panel still works for this session
+            }}
+        }}
+
+        function getOrCreateImageLoadMetricsPanel() {{
+            let panel = parent.getElementById('image-load-metrics-panel');
+            if (!panel) {{
+                panel = parent.createElement('div');
+                panel.id = 'image-load-metrics-panel';
+                panel.className = 'image-load-metrics-panel collapsed';
+                parent.body.appendChild(panel);
+            }}
+            return panel;
+        }}
+
+        function renderMetricCards(summary) {{
+            const cards = [
+                ['Loaded', String(summary.loaded) + '/' + String(summary.total)],
+                ['Pending', String(summary.pending)],
+                ['P95', formatMetricMs(summary.p95)],
+                ['Max', formatMetricMs(summary.max)],
+                ['Avg', formatMetricMs(summary.avg)],
+                ['Server p95', formatMetricMs(summary.serverP95)],
+                ['Transfer', formatMetricBytes(summary.transferBytes)],
+                ['Errors', String(summary.failed)],
+            ];
+            return '<div class="metrics-grid">' + cards.map((card) =>
+                '<div class="metric-card"><div class="metric-value">' + escapeMetricHtml(card[1]) + '</div><div class="metric-label">' + escapeMetricHtml(card[0]) + '</div></div>'
+            ).join('') + '</div>';
+        }}
+
+        function renderSlowImageRows(records) {{
+            const rows = records
+                .filter((record) => record.status === 'error' || record.status === 'loaded' || record.status === 'preloaded')
+                .sort((a, b) => {{
+                    if (a.status === 'error' && b.status !== 'error') return -1;
+                    if (b.status === 'error' && a.status !== 'error') return 1;
+                    return Number(getEffectiveLoadMs(b) || 0) - Number(getEffectiveLoadMs(a) || 0);
+                }})
+                .slice(0, 10);
+            if (!rows.length) {{
+                return '<div class="metrics-row"><span class="metrics-row-name">No completed image loads yet</span><span class="metrics-row-value">pending</span></div>';
+            }}
+            return rows.map((record) => {{
+                const value = record.status === 'error' ? 'error' : formatMetricMs(getEffectiveLoadMs(record));
+                const extra = record.thumbnailServerMs != null ? ' · server ' + formatMetricMs(record.thumbnailServerMs) : '';
+                const pathAttr = record.path ? ' data-path="' + escapeMetricHtml(record.path) + '"' : '';
+                return '<div class="metrics-row clickable"' + pathAttr + '><span class="metrics-row-name">' +
+                    escapeMetricHtml(record.name || basenameFromPath(record.path || record.src || 'image')) +
+                    '</span><span class="metrics-row-value">' + escapeMetricHtml(value + extra) + '</span></div>';
+            }}).join('');
+        }}
+
+        function renderFolderAggregateRows() {{
+            const folderRows = Object.keys(imageLoadMetricsState.folderRecords || {{}})
+                .map((folderKey) => {{
+                    const records = Object.values(imageLoadMetricsState.folderRecords[folderKey] || {{}});
+                    const summary = summarizeImageLoadRecords(records);
+                    return {{ folderKey, summary }};
+                }})
+                .sort((a, b) => Number(b.summary.p95 || b.summary.max || 0) - Number(a.summary.p95 || a.summary.max || 0))
+                .slice(0, 8);
+            if (!folderRows.length) {{
+                return '<div class="metrics-row"><span class="metrics-row-name">No folder aggregates yet</span><span class="metrics-row-value">n/a</span></div>';
+            }}
+            return folderRows.map((entry) =>
+                '<div class="metrics-row"><span class="metrics-row-name">' + escapeMetricHtml(basenameFromPath(entry.folderKey)) +
+                '</span><span class="metrics-row-value">' + escapeMetricHtml(
+                    entry.summary.loaded + '/' + entry.summary.total + ' · p95 ' + formatMetricMs(entry.summary.p95)
+                ) + '</span></div>'
+            ).join('');
+        }}
+
+        function bindImageMetricsPanelRows(panel) {{
+            if (!panel || panel.dataset.metricsRowsBound === activeScriptToken) {{
+                return;
+            }}
+            panel.dataset.metricsRowsBound = activeScriptToken;
+            panel.addEventListener('click', function(event) {{
+                const target = event.target && event.target.closest ? event.target.closest('.metrics-row.clickable[data-path]') : null;
+                if (target && target.dataset.path) {{
+                    event.preventDefault();
+                    event.stopPropagation();
+                    jumpToContainerByPath(target.dataset.path, true);
+                }}
+            }}, true);
+        }}
+
+        function renderImageLoadMetricsPanel() {{
+            if (!parent || !parent.body) {{
+                return;
+            }}
+            const panel = getOrCreateImageLoadMetricsPanel();
+            const currentRecords = getCurrentMetricRecords();
+            const sessionRecords = getSessionMetricRecords();
+            const currentSummary = summarizeImageLoadRecords(currentRecords);
+            const sessionSummary = summarizeImageLoadRecords(sessionRecords);
+            const collapsed = isImageMetricsCollapsed();
+            panel.classList.toggle('collapsed', collapsed);
+            panel.classList.toggle('has-pending', currentSummary.pending > 0);
+            panel.classList.toggle('has-errors', currentSummary.failed > 0);
+            const summaryLine = currentSummary.loaded + '/' + currentSummary.total +
+                ' loaded · p95 ' + formatMetricMs(currentSummary.p95) +
+                (currentSummary.pending ? ' · ' + currentSummary.pending + ' pending' : '') +
+                (currentSummary.failed ? ' · ' + currentSummary.failed + ' errors' : '');
+            panel.innerHTML =
+                '<div class="metrics-header" title="Toggle image load metrics">' +
+                    '<div class="metrics-title"><span class="metrics-pulse"></span><span>Image load</span><span class="metrics-summary-line">' + escapeMetricHtml(summaryLine) + '</span></div>' +
+                    '<button type="button" class="metrics-toggle">' + (collapsed ? 'Show' : 'Hide') + '</button>' +
+                '</div>' +
+                '<div class="metrics-body">' +
+                    '<div class="metrics-section-title"><span>Current folder</span><span>' + escapeMetricHtml(basenameFromPath(activeFolderPath)) + '</span></div>' +
+                    renderMetricCards(currentSummary) +
+                    '<div class="metrics-section-title"><span>Slow / failed images</span><span>click to jump</span></div>' +
+                    '<div class="metrics-list">' + renderSlowImageRows(currentRecords) + '</div>' +
+                    '<div class="metrics-section-title"><span>Session aggregate</span><span>all folders this browser session</span></div>' +
+                    renderMetricCards(sessionSummary) +
+                    '<div class="metrics-section-title"><span>Folder aggregates</span><span>p95 sorted</span></div>' +
+                    '<div class="metrics-list">' + renderFolderAggregateRows() + '</div>' +
+                    '<div class="metrics-note">Browser timings come from image load events plus PerformanceResourceTiming. Thumbnail server timing appears when the local thumbnail endpoint returns Server-Timing.</div>' +
+                '</div>';
+            const header = panel.querySelector('.metrics-header');
+            if (header) {{
+                header.addEventListener('click', function(event) {{
+                    event.preventDefault();
+                    event.stopPropagation();
+                    const nextCollapsed = !panel.classList.contains('collapsed');
+                    setImageMetricsCollapsed(nextCollapsed);
+                    renderImageLoadMetricsPanel();
+                }}, {{ once: true }});
+            }}
+            bindImageMetricsPanelRows(panel);
+        }}
+
+        function finalizeImageLoadMetric(container, img, record, status) {{
+            if (!isActiveScriptInstance() || !record || record.done) {{
+                return;
+            }}
+            record.done = true;
+            record.status = status;
+            record.completedAt = metricsNow();
+            record.observedMs = Math.max(0, record.completedAt - record.boundAt);
+            record.src = img.currentSrc || img.src || record.src || '';
+            record.naturalWidth = img.naturalWidth || 0;
+            record.naturalHeight = img.naturalHeight || 0;
+            Object.assign(record, getResourceTiming(record.src));
+            if (container) {{
+                container.classList.toggle('image-load-pending', false);
+                container.classList.toggle('image-load-error', status === 'error');
+            }}
+            upsertImageLoadRecord(record);
+            scheduleImageLoadMetricsRender();
+        }}
+
+        function bindImageLoadMetrics(targetDoc) {{
+            if (!targetDoc || !targetDoc.querySelectorAll) {{
+                return;
+            }}
+            const containers = Array.from(targetDoc.querySelectorAll('.img-container'));
+            imageLoadMetricsState.current.total = Math.max(imageLoadMetricsState.current.total || 0, containers.length);
+            containers.forEach((container, index) => {{
+                const img = container.querySelector ? container.querySelector('img') : null;
+                if (!img) {{
+                    return;
+                }}
+                const path = container.dataset && container.dataset.path ? container.dataset.path : '';
+                const src = img.currentSrc || img.src || '';
+                const key = path || src || String(index);
+                let record = imageLoadMetricsState.current.records[key];
+                if (!record) {{
+                    record = {{
+                        key,
+                        path,
+                        src,
+                        folder: activeFolderPath || 'current folder',
+                        name: img.getAttribute('alt') || basenameFromPath(path || src),
+                        index,
+                        status: 'pending',
+                        boundAt: metricsNow(),
+                    }};
+                    imageLoadMetricsState.current.records[key] = record;
+                }}
+                container.classList.toggle('image-load-pending', record.status === 'pending');
+                if (container.dataset.imageLoadMetricsToken !== activeScriptToken) {{
+                    container.dataset.imageLoadMetricsToken = activeScriptToken;
+                    img.addEventListener('load', () => finalizeImageLoadMetric(container, img, record, 'loaded'), {{ once: true }});
+                    img.addEventListener('error', () => finalizeImageLoadMetric(container, img, record, 'error'), {{ once: true }});
+                }}
+                if (img.complete) {{
+                    window.setTimeout(() => finalizeImageLoadMetric(container, img, record, img.naturalWidth > 0 ? 'loaded' : 'error'), 0);
+                }}
+            }});
+            scheduleImageLoadMetricsRender();
+        }}
+
+        function recordPreloadMetric(url, status, startedAt) {{
+            const key = 'preload|' + String(url || '');
+            const record = {{
+                key,
+                path: '',
+                src: url,
+                folder: activeFolderPath || 'current folder',
+                name: 'preload ' + basenameFromPath(url),
+                status: status === 'loaded' ? 'preloaded' : 'preload-error',
+                boundAt: startedAt,
+                completedAt: metricsNow(),
+            }};
+            record.observedMs = Math.max(0, record.completedAt - record.boundAt);
+            Object.assign(record, getResourceTiming(url));
+            upsertImageLoadRecord(record);
+            scheduleImageLoadMetricsRender();
+        }}
         let labelRenameMap = loadLabelRenameMap();
         labelRenameMap = normalizeAndRepairLabelRenameMap(labelRenameMap);
         const clipboardApiState = {{
@@ -8244,22 +8826,24 @@ def main() -> None:
                     return;
                 }}
                 while (active < concurrency && cursor < queue.length) {{
-                    const url = queue[cursor];
-                    cursor += 1;
-                    active += 1;
-                    const img = new Image();
-                    state.inflight[url] = img;
-                    const done = () => {{
-                        active = Math.max(0, active - 1);
-                        delete state.inflight[url];
-                        state.seen[url] = Date.now();
-                        pump();
-                    }};
-                    img.onload = done;
-                    img.onerror = done;
-                    img.decoding = 'async';
-                    img.loading = 'eager';
-                    img.src = url;
+                      const url = queue[cursor];
+                      cursor += 1;
+                      active += 1;
+                      const img = new Image();
+                      const preloadStartedAt = metricsNow();
+                      state.inflight[url] = img;
+                      const done = (status) => {{
+                          active = Math.max(0, active - 1);
+                          delete state.inflight[url];
+                          state.seen[url] = Date.now();
+                          recordPreloadMetric(url, status, preloadStartedAt);
+                          pump();
+                      }};
+                      img.onload = () => done('loaded');
+                      img.onerror = () => done('error');
+                      img.decoding = 'async';
+                      img.loading = 'eager';
+                      img.src = url;
                 }}
             }};
             const start = () => {{
@@ -8446,10 +9030,11 @@ def main() -> None:
                     return;
                 }}
                 const containers = targetDoc.querySelectorAll('.img-container');
-                if (!containers.length) {{
-                    return;
-                }}
-                containers.forEach((container) => {{
+                  if (!containers.length) {{
+                      return;
+                  }}
+                  bindImageLoadMetrics(targetDoc);
+                  containers.forEach((container) => {{
                     const copyBtn = container.querySelector('.copy-btn');
                     const rotateBtn = container.querySelector('.rotate-btn');
                     const enlargeBtn = container.querySelector('.enlarge-btn');

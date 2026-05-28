@@ -7,6 +7,7 @@ A Streamlit image-labeling workflow for turning field photo sets into structured
 - Displays image folders as a fast review grid.
 - Supports multi-select, range select, and command/control-assisted selection.
 - Applies table-oriented labels with visible chips instead of hidden dropdowns.
+- Shows a floating image-load metrics panel with loaded/pending/error counts, avg/p50/p90/p95/max timing, thumbnail server timing, session aggregates, folder aggregates, and clickable slow/failed image rows.
 - Persists annotation metadata separately from photos.
 - Shows folder-level status such as video presence and label completeness.
 - Exports labeled-data backups without copying source photos.
